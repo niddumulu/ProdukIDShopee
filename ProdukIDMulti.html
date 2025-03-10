@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ambil Data Produk</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        textarea {
+            width: 100%;
+            height: 150px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            resize: none;
+        }
+
+        .button-container {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+
+        .button-container button {
+            flex: 1;
+            padding: 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            text-align: center;
+        }
+
+        .button-container button:hover {
+            background-color: #45a049;
+        }
+
+        .copy-btn {
+            background-color: #008CBA;
+        }
+
+        .copy-btn:hover {
+            background-color: #007B9E;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th, td {
+            border: 1px solid #ccc;
+            padding: 8px;
+            text-align: center;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>Ambil Data Produk</h2>
+        <textarea id="inputData" placeholder="Masukkan data produk di sini"></textarea>
+
+        <div class="button-container">
+            <button onclick="ambilData()">Ambil Data</button>
+            <button onclick="clearFields()">Clear</button>
+            <button id="copyBtn" class="copy-btn hidden" onclick="copyText()">Copy</button>
+            <button id="copyProdukIDBtn" class="copy-btn hidden" onclick="copyProdukID()">Copy ProdukID</button>
+            <button id="downloadBtn" class="hidden" onclick="downloadCSV()">Download CSV</button>
+        </div>
+
+        <table id="outputTable">
+            <thead>
+                <tr>
+                    <th>Produk ID</th>
+                    <th>Klik Produk</th>
+                    <th>Produk Terjual</th>
+                    <th>Penjualan</th>
+                </tr>
+            </thead>
+            <tbody id="outputBody"></tbody>
+        </table>
+    </div>
+
+    <script>
+        function ambilData() {
+            const inputData = document.getElementById('inputData').value;
+            const regexProduk = /Produk ID:\s*(\d+)/g;
+            const regexKlik = /Produk ID:\s*\d+\s*([\d]+)/g;
+            const regexTerjual = /Produk ID:\s*\d+\s*[\d]+\s*[\d]+\s*([\d]+)/g;
+            const regexPenjualan = /Rp([\d.,]+)/g;
+
+            let produkList = [];
+            let produkIDs = [], klikValues = [], terjualValues = [], penjualanValues = [];
+
+            // Ambil Produk ID
+            let match;
+            while ((match = regexProduk.exec(inputData)) !== null) {
+                produkIDs.push(match[1]);
+            }
+
+            // Ambil Klik Produk
+            while ((match = regexKlik.exec(inputData)) !== null) {
+                klikValues.push(match[1]);
+            }
+
+            // Ambil Produk Terjual
+            while ((match = regexTerjual.exec(inputData)) !== null) {
+                terjualValues.push(match[1]);
+            }
+
+            // Ambil Penjualan
+            while ((match = regexPenjualan.exec(inputData)) !== null) {
+                penjualanValues.push(`Rp${match[1]}`);
+            }
+
+            // Gabungkan hasil berdasarkan urutan
+            for (let i = 0; i < produkIDs.length; i++) {
+                produkList.push({
+                    produkID: produkIDs[i] || "-",
+                    klik: klikValues[i] || "-",
+                    terjual: terjualValues[i] || "-",
+                    penjualan: penjualanValues[i] || "Rp -"
+                });
+            }
+
+            // Tampilkan hasil dalam tabel
+            const outputBody = document.getElementById('outputBody');
+            outputBody.innerHTML = "";
+            produkList.forEach(item => {
+                let row = outputBody.insertRow();
+                row.insertCell(0).innerText = item.produkID;
+                row.insertCell(1).innerText = item.klik;
+                row.insertCell(2).innerText = item.terjual;
+                row.insertCell(3).innerText = item.penjualan;
+            });
+
+            // Tampilkan tombol Copy & Download jika ada data
+            document.getElementById('copyBtn').classList.toggle("hidden", produkList.length === 0);
+            document.getElementById('copyProdukIDBtn').classList.toggle("hidden", produkList.length === 0);
+            document.getElementById('downloadBtn').classList.toggle("hidden", produkList.length === 0);
+        }
+
+        function clearFields() {
+            document.getElementById('inputData').value = '';
+            document.getElementById('outputBody').innerHTML = '';
+            document.getElementById('copyBtn').classList.add("hidden");
+            document.getElementById('copyProdukIDBtn').classList.add("hidden");
+            document.getElementById('downloadBtn').classList.add("hidden");
+        }
+
+        function copyText() {
+            let table = document.getElementById('outputTable');
+            let text = "Produk ID\tKlik Produk\tProduk Terjual\tPenjualan\n";
+
+            for (let i = 1; i < table.rows.length; i++) {
+                let row = table.rows[i];
+                text += row.cells[0].innerText + "\t" +
+                        row.cells[1].innerText + "\t" +
+                        row.cells[2].innerText + "\t" +
+                        row.cells[3].innerText + "\n";
+            }
+
+            navigator.clipboard.writeText(text).then(() => {
+                alert('Teks berhasil disalin!');
+            }).catch(err => {
+                alert('Gagal menyalin teks: ' + err);
+            });
+        }
+
+        function copyProdukID() {
+            let table = document.getElementById('outputTable');
+            let produkIDs = [];
+
+            for (let i = 1; i < table.rows.length; i++) {
+                produkIDs.push(table.rows[i].cells[0].innerText);
+            }
+
+            // Menyalin Produk ID ke clipboard
+            navigator.clipboard.writeText(produkIDs.join("\n")).then(() => {
+                alert('Produk ID berhasil disalin!');
+            }).catch(err => {
+                alert('Gagal menyalin Produk ID: ' + err);
+            });
+        }
+
+        function downloadCSV() {
+            let table = document.getElementById('outputTable');
+            let csvContent = "Produk ID,Klik Produk,Produk Terjual,Penjualan\n";
+
+            for (let i = 1; i < table.rows.length; i++) {
+                let row = table.rows[i];
+                csvContent += row.cells[0].innerText + "," +
+                              row.cells[1].innerText + "," +
+                              row.cells[2].innerText + "," +
+                              row.cells[3].innerText + "\n";
+            }
+
+            let blob = new Blob([csvContent], { type: 'text/csv' });
+            let link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = "data_produk.csv";
+            link.click();
+        }
+    </script>
+
+</body>
+</html>
